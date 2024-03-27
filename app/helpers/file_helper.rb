@@ -127,6 +127,10 @@ module FileHelper
     dst
   end
 
+  def student_work_root
+    Doubtfire::Application.config.student_work_dir
+  end
+
   #
   # Generates a path for storing student work
   # type = [:new, :in_process, :done, :pdf, :plagarism]
@@ -301,14 +305,18 @@ module FileHelper
 
   #
   # Move files between stages - new -> in process -> done
-  #
-  def move_files(from_path, to_path, retain_from = false)
+  # Params:
+  # - from path = copy from
+  # - to path = destination
+  # - retain_from = true if you want to keep from, otherwise it is deleted
+  # - only_before = date for files to move (only if retain from is true)
+  def move_files(from_path, to_path, retain_from = false, only_before = nil)
     # move into the new dir - and mv files to the in_process_dir
     pwd = FileUtils.pwd
     begin
       FileUtils.mkdir_p(to_path)
       Dir.chdir(from_path)
-      FileUtils.mv Dir.glob('*'), to_path, force: true
+      FileUtils.mv Dir.glob('*').filter{|fn| !retain_from || only_before.nil? || File.ctime(fn) < only_before}, to_path, force: true
       Dir.chdir(to_path)
       begin
         # remove from_path as files are now "in process"
@@ -530,6 +538,7 @@ module FileHelper
   module_function :tmp_file
   module_function :student_group_work_dir
   module_function :student_work_dir
+  module_function :student_work_root
   module_function :unit_dir
   module_function :unit_portfolio_dir
   module_function :student_portfolio_dir
